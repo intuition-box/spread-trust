@@ -1,5 +1,6 @@
 import { createWalletClient, createPublicClient, http, formatEther, parseEther } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
+import jsQR from 'jsqr'
 
 const intuitionChain = {
   id: 1155,
@@ -83,20 +84,17 @@ function setStatus(msg, type = 'info') {
   $status.className = `status-${type}`
 }
 
-// --- QR Scanner using BarcodeDetector API (native) with canvas fallback ---
+// --- QR Scanner ---
 
 let scanning = false
 let scanStream = null
 let scanInterval = null
+const scanCanvas = document.createElement('canvas')
+const scanCtx = scanCanvas.getContext('2d', { willReadFrequently: true })
+const useNative = 'BarcodeDetector' in window
 
 async function startScan() {
   if (scanning) return
-
-  // Check for BarcodeDetector support
-  if (!('BarcodeDetector' in window)) {
-    setStatus('BarcodeDetector not supported. Use Chrome on Android or Safari 15.4+.', 'error')
-    return
-  }
 
   try {
     scanStream = await navigator.mediaDevices.getUserMedia({
@@ -115,15 +113,21 @@ async function startScan() {
   $sendForm.style.display = 'none'
   setStatus('Point camera at a QR code...', 'info')
 
-  const detector = new BarcodeDetector({ formats: ['qr_code'] })
+  const detector = useNative ? new BarcodeDetector({ formats: ['qr_code'] }) : null
 
   scanInterval = setInterval(async () => {
-    if (!scanning) return
+    if (!scanning || !$video.videoWidth) return
     try {
-      const barcodes = await detector.detect($video)
-      if (barcodes.length > 0) {
-        const raw = barcodes[0].rawValue
-        handleScannedValue(raw)
+      if (detector) {
+        const barcodes = await detector.detect($video)
+        if (barcodes.length > 0) handleScannedValue(barcodes[0].rawValue)
+      } else {
+        scanCanvas.width = $video.videoWidth
+        scanCanvas.height = $video.videoHeight
+        scanCtx.drawImage($video, 0, 0)
+        const imageData = scanCtx.getImageData(0, 0, scanCanvas.width, scanCanvas.height)
+        const code = jsQR(imageData.data, imageData.width, imageData.height)
+        if (code) handleScannedValue(code.data)
       }
     } catch {
       // detection can fail on some frames, ignore
