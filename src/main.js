@@ -176,6 +176,13 @@ function handleScannedValue(value) {
   setStatus('Enter amount and send', 'info')
 }
 
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const current = parseFloat($sendAmount.value) || 0
+    $sendAmount.value = current + Number(chip.dataset.add)
+  })
+})
+
 $scanBtn.addEventListener('click', startScan)
 $stopScanBtn.addEventListener('click', () => {
   stopScan()

@@ -109,6 +109,24 @@
       word-break: break-all;
       margin-bottom: 0.5rem;
     }
+    .chips {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+    .chip {
+      background: #2a2a2a;
+      color: #7dd3fc;
+      border: 1px solid #333;
+      border-radius: 20px;
+      padding: 0.3rem 0.7rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .chip:active { background: #3a3a3a; }
 
     #status {
       margin-top: 1rem;
@@ -234,6 +252,13 @@
       <div class="card-title">Send to</div>
       <div class="to-address" id="send-to"></div>
       <input type="text" id="send-amount" placeholder="Amount (TRUST)" inputmode="decimal" />
+      <div class="chips">
+        <span class="chip" data-add="1">+1</span>
+        <span class="chip" data-add="5">+5</span>
+        <span class="chip" data-add="10">+10</span>
+        <span class="chip" data-add="20">+20</span>
+        <span class="chip" data-add="50">+50</span>
+      </div>
       <button id="send-btn" style="width:100%; margin-top:0">Send</button>
     </div>
 
