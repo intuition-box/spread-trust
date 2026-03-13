@@ -1,0 +1,211 @@
+import { createWalletClient, createPublicClient, http, formatEther, parseEther } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+
+const intuitionChain = {
+  id: 1155,
+  name: 'Intuition',
+  nativeCurrency: { name: 'Trust', symbol: 'TRUST', decimals: 18 },
+  rpcUrls: {
+    default: { http: ['https://rpc.intuition.systems/http'] },
+  },
+  blockExplorers: {
+    default: { name: 'Intuition Explorer', url: 'https://explorer.intuition.systems' },
+  },
+}
+
+const transport = http(intuitionChain.rpcUrls.default.http[0])
+
+// --- Wallet management ---
+
+function getOrCreateWallet() {
+  let pk = localStorage.getItem('spread-trust-pk')
+  if (!pk) {
+    // Generate random 32 bytes as hex private key
+    const bytes = crypto.getRandomValues(new Uint8Array(32))
+    pk = '0x' + Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
+    localStorage.setItem('spread-trust-pk', pk)
+  }
+  return privateKeyToAccount(pk)
+}
+
+const account = getOrCreateWallet()
+
+const walletClient = createWalletClient({
+  account,
+  chain: intuitionChain,
+  transport,
+})
+
+const publicClient = createPublicClient({
+  chain: intuitionChain,
+  transport,
+})
+
+// --- UI ---
+
+const $address = document.getElementById('wallet-address')
+const $balance = document.getElementById('balance')
+const $scanBtn = document.getElementById('scan-btn')
+const $stopScanBtn = document.getElementById('stop-scan-btn')
+const $scannerContainer = document.getElementById('scanner-container')
+const $video = document.getElementById('scanner-video')
+const $sendForm = document.getElementById('send-form')
+const $sendTo = document.getElementById('send-to')
+const $sendAmount = document.getElementById('send-amount')
+const $sendBtn = document.getElementById('send-btn')
+const $status = document.getElementById('status')
+const $resetBtn = document.getElementById('reset-btn')
+
+$address.textContent = account.address
+$address.addEventListener('click', () => {
+  navigator.clipboard.writeText(account.address)
+  setStatus('Address copied!', 'info')
+})
+
+async function refreshBalance() {
+  try {
+    const bal = await publicClient.getBalance({ address: account.address })
+    $balance.textContent = formatEther(bal)
+  } catch {
+    $balance.textContent = '—'
+  }
+}
+refreshBalance()
+setInterval(refreshBalance, 15000)
+
+function setStatus(msg, type = 'info') {
+  $status.textContent = msg
+  $status.className = `status-${type}`
+}
+
+// --- QR Scanner using BarcodeDetector API (native) with canvas fallback ---
+
+let scanning = false
+let scanStream = null
+let scanInterval = null
+
+async function startScan() {
+  if (scanning) return
+
+  // Check for BarcodeDetector support
+  if (!('BarcodeDetector' in window)) {
+    setStatus('BarcodeDetector not supported. Use Chrome on Android or Safari 15.4+.', 'error')
+    return
+  }
+
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' },
+    })
+  } catch {
+    setStatus('Camera access denied', 'error')
+    return
+  }
+
+  scanning = true
+  $video.srcObject = scanStream
+  $scannerContainer.style.display = 'block'
+  $scanBtn.style.display = 'none'
+  $stopScanBtn.style.display = 'block'
+  $sendForm.style.display = 'none'
+  setStatus('Point camera at a QR code...', 'info')
+
+  const detector = new BarcodeDetector({ formats: ['qr_code'] })
+
+  scanInterval = setInterval(async () => {
+    if (!scanning) return
+    try {
+      const barcodes = await detector.detect($video)
+      if (barcodes.length > 0) {
+        const raw = barcodes[0].rawValue
+        handleScannedValue(raw)
+      }
+    } catch {
+      // detection can fail on some frames, ignore
+    }
+  }, 300)
+}
+
+function stopScan() {
+  scanning = false
+  if (scanInterval) clearInterval(scanInterval)
+  if (scanStream) {
+    scanStream.getTracks().forEach(t => t.stop())
+    scanStream = null
+  }
+  $video.srcObject = null
+  $scannerContainer.style.display = 'none'
+  $scanBtn.style.display = 'block'
+  $stopScanBtn.style.display = 'none'
+}
+
+function handleScannedValue(value) {
+  stopScan()
+
+  // Extract ethereum address — support raw address or EIP-681 URIs
+  let address = value.trim()
+  if (address.startsWith('ethereum:')) {
+    address = address.replace('ethereum:', '').split('@')[0].split('/')[0].split('?')[0]
+  }
+
+  if (!/^0x[0-9a-fA-F]{40}$/.test(address)) {
+    setStatus(`Invalid address: ${value}`, 'error')
+    return
+  }
+
+  $sendTo.textContent = address
+  $sendForm.style.display = 'block'
+  $sendAmount.value = ''
+  $sendAmount.focus()
+  setStatus('Enter amount and send', 'info')
+}
+
+$scanBtn.addEventListener('click', startScan)
+$stopScanBtn.addEventListener('click', () => {
+  stopScan()
+  setStatus('', 'info')
+})
+
+// --- Send transaction ---
+
+$sendBtn.addEventListener('click', async () => {
+  const to = $sendTo.textContent
+  const amountStr = $sendAmount.value.trim()
+
+  if (!amountStr || isNaN(Number(amountStr)) || Number(amountStr) <= 0) {
+    setStatus('Enter a valid amount', 'error')
+    return
+  }
+
+  $sendBtn.disabled = true
+  setStatus('Sending...', 'info')
+
+  try {
+    const value = parseEther(amountStr)
+    const hash = await walletClient.sendTransaction({ to, value })
+    setStatus('', 'info')
+    $status.innerHTML = `Sent! <a class="tx-link" href="${intuitionChain.blockExplorers.default.url}/tx/${hash}" target="_blank" rel="noopener">${hash.slice(0, 10)}...${hash.slice(-8)}</a>`
+    $status.className = 'status-success'
+    $sendForm.style.display = 'none'
+    refreshBalance()
+  } catch (err) {
+    setStatus(`Failed: ${err.shortMessage || err.message}`, 'error')
+  } finally {
+    $sendBtn.disabled = false
+  }
+})
+
+// --- Reset wallet ---
+
+$resetBtn.addEventListener('click', () => {
+  if (confirm('This will delete your burner wallet permanently. Are you sure?')) {
+    localStorage.removeItem('spread-trust-pk')
+    location.reload()
+  }
+})
+
+// --- PWA service worker ---
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {})
+}
