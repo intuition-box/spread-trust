@@ -126,53 +126,151 @@
     .tx-link { color: #7dd3fc; text-decoration: none; font-size: 0.8rem; }
     .tx-link:hover { text-decoration: underline; }
 
-    .reset-btn {
+    /* Settings page */
+    .page { display: flex; flex-direction: column; align-items: center; width: 100%; }
+    .page.hidden { display: none; }
+
+    .settings-btn {
       background: none;
       border: none;
-      color: #f87171;
-      font-size: 0.75rem;
+      color: #888;
+      font-size: 0.85rem;
       cursor: pointer;
-      margin-top: 2rem;
-      margin-bottom: 2rem;
+      margin-top: 1.5rem;
+      margin-bottom: 1.5rem;
       width: auto;
       padding: 0.5rem;
     }
+    .settings-btn:active { color: #fff; }
+
+    .back-btn {
+      background: none;
+      border: none;
+      color: #7dd3fc;
+      font-size: 0.9rem;
+      cursor: pointer;
+      width: auto;
+      padding: 0.5rem;
+      align-self: flex-start;
+      margin-left: 5%;
+      margin-top: 1rem;
+    }
+
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .setting-row label {
+      font-size: 0.9rem;
+      color: #ccc;
+    }
+    .setting-row input[type="text"] {
+      width: 120px;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      padding: 0.5rem 0.7rem;
+      color: #fff;
+      font-size: 0.9rem;
+      text-align: right;
+      font-family: inherit;
+    }
+    .toggle {
+      position: relative;
+      width: 48px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+    .toggle input { opacity: 0; width: 0; height: 0; }
+    .toggle .slider {
+      position: absolute;
+      inset: 0;
+      background: #333;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .toggle .slider::before {
+      content: '';
+      position: absolute;
+      width: 22px;
+      height: 22px;
+      left: 3px;
+      bottom: 3px;
+      background: #fff;
+      border-radius: 50%;
+      transition: transform 0.2s;
+    }
+    .toggle input:checked + .slider { background: #7dd3fc; }
+    .toggle input:checked + .slider::before { transform: translateX(20px); }
+
+    .card + .card { margin-top: 0; }
   </style>
 </head>
 <body>
-  <h1>Spread Trust</h1>
-  <p class="subtitle">Burner wallet for Intuition Chain</p>
+  <!-- Main page -->
+  <div class="page" id="page-main">
+    <h1>Spread Trust</h1>
+    <p class="subtitle">Burner wallet for Intuition Chain</p>
 
-  <div class="card">
-    <div class="card-title">Your Burner Wallet</div>
-    <div class="address" id="wallet-address" title="Tap to copy"></div>
+    <div class="card">
+      <div class="card-title">Your Burner Wallet</div>
+      <div class="address" id="wallet-address" title="Tap to copy"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Balance</div>
+      <div><span class="balance" id="balance">—</span><span class="balance-symbol">TRUST</span></div>
+    </div>
+
+    <div id="scanner-container">
+      <video id="scanner-video" autoplay playsinline></video>
+      <div class="scanner-overlay"><div class="scanner-frame"></div></div>
+    </div>
+
+    <div class="card send-form" id="send-form">
+      <div class="card-title">Send to</div>
+      <div class="to-address" id="send-to"></div>
+      <input type="text" id="send-amount" placeholder="Amount (TRUST)" inputmode="decimal" />
+      <button id="send-btn" style="width:100%; margin-top:0">Send</button>
+    </div>
+
+    <div class="actions">
+      <button id="scan-btn">Scan QR Code</button>
+      <button id="stop-scan-btn" class="secondary" style="display:none">Cancel Scan</button>
+    </div>
+
+    <div id="status"></div>
+
+    <button class="settings-btn" id="open-settings">Settings</button>
   </div>
 
-  <div class="card">
-    <div class="card-title">Balance</div>
-    <div><span class="balance" id="balance">—</span><span class="balance-symbol">TRUST</span></div>
+  <!-- Settings page -->
+  <div class="page hidden" id="page-settings">
+    <button class="back-btn" id="back-btn">&larr; Back</button>
+    <h1>Settings</h1>
+
+    <div class="card">
+      <div class="card-title">Default amount</div>
+      <div class="setting-row">
+        <label>TRUST per scan</label>
+        <input type="text" id="setting-amount" placeholder="0.01" inputmode="decimal" />
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Auto send</div>
+      <div class="setting-row">
+        <label>Send on scan</label>
+        <label class="toggle">
+          <input type="checkbox" id="setting-autosend" />
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
   </div>
-
-  <div id="scanner-container">
-    <video id="scanner-video" autoplay playsinline></video>
-    <div class="scanner-overlay"><div class="scanner-frame"></div></div>
-  </div>
-
-  <div class="card send-form" id="send-form">
-    <div class="card-title">Send to</div>
-    <div class="to-address" id="send-to"></div>
-    <input type="text" id="send-amount" placeholder="Amount (TRUST)" inputmode="decimal" />
-    <button id="send-btn" style="width:100%; margin-top:0">Send</button>
-  </div>
-
-  <div class="actions">
-    <button id="scan-btn">Scan QR Code</button>
-    <button id="stop-scan-btn" class="secondary" style="display:none">Cancel Scan</button>
-  </div>
-
-  <div id="status"></div>
-
-  <button class="reset-btn" id="reset-btn">Reset Wallet</button>
 
   <script type="module" src="/src/main.js"></script>
 </body>

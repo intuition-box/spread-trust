@@ -54,7 +54,12 @@ const $sendTo = document.getElementById('send-to')
 const $sendAmount = document.getElementById('send-amount')
 const $sendBtn = document.getElementById('send-btn')
 const $status = document.getElementById('status')
-const $resetBtn = document.getElementById('reset-btn')
+const $pageMain = document.getElementById('page-main')
+const $pageSettings = document.getElementById('page-settings')
+const $openSettings = document.getElementById('open-settings')
+const $backBtn = document.getElementById('back-btn')
+const $settingAmount = document.getElementById('setting-amount')
+const $settingAutosend = document.getElementById('setting-autosend')
 
 $address.textContent = account.address
 $address.addEventListener('click', () => {
@@ -153,10 +158,17 @@ function handleScannedValue(value) {
     return
   }
 
+  const settings = loadSettings()
+
+  if (settings.autoSend && settings.defaultAmount) {
+    sendTo(address, settings.defaultAmount)
+    return
+  }
+
   $sendTo.textContent = address
   $sendForm.style.display = 'block'
-  $sendAmount.value = ''
-  $sendAmount.focus()
+  $sendAmount.value = settings.defaultAmount || ''
+  if (!settings.defaultAmount) $sendAmount.focus()
   setStatus('Enter amount and send', 'info')
 }
 
@@ -168,10 +180,7 @@ $stopScanBtn.addEventListener('click', () => {
 
 // --- Send transaction ---
 
-$sendBtn.addEventListener('click', async () => {
-  const to = $sendTo.textContent
-  const amountStr = $sendAmount.value.trim()
-
+async function sendTo(to, amountStr) {
   if (!amountStr || isNaN(Number(amountStr)) || Number(amountStr) <= 0) {
     setStatus('Enter a valid amount', 'error')
     return
@@ -193,15 +202,43 @@ $sendBtn.addEventListener('click', async () => {
   } finally {
     $sendBtn.disabled = false
   }
+}
+
+$sendBtn.addEventListener('click', () => {
+  sendTo($sendTo.textContent, $sendAmount.value.trim())
 })
 
-// --- Reset wallet ---
+// --- Settings ---
 
-$resetBtn.addEventListener('click', () => {
-  if (confirm('This will delete your burner wallet permanently. Are you sure?')) {
-    localStorage.removeItem('spread-trust-pk')
-    location.reload()
+function loadSettings() {
+  return {
+    defaultAmount: localStorage.getItem('spread-trust-amount') || '',
+    autoSend: localStorage.getItem('spread-trust-autosend') === 'true',
   }
+}
+
+function saveSettings() {
+  localStorage.setItem('spread-trust-amount', $settingAmount.value.trim())
+  localStorage.setItem('spread-trust-autosend', $settingAutosend.checked)
+}
+
+// Init settings UI
+const savedSettings = loadSettings()
+$settingAmount.value = savedSettings.defaultAmount
+$settingAutosend.checked = savedSettings.autoSend
+
+$settingAmount.addEventListener('change', saveSettings)
+$settingAutosend.addEventListener('change', saveSettings)
+
+$openSettings.addEventListener('click', () => {
+  $pageMain.classList.add('hidden')
+  $pageSettings.classList.remove('hidden')
+})
+
+$backBtn.addEventListener('click', () => {
+  saveSettings()
+  $pageSettings.classList.add('hidden')
+  $pageMain.classList.remove('hidden')
 })
 
 // --- PWA service worker ---
