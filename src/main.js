@@ -21,7 +21,6 @@ const transport = http(intuitionChain.rpcUrls.default.http[0])
 function getOrCreateWallet() {
   let pk = localStorage.getItem('spread-trust-pk')
   if (!pk) {
-    // Generate random 32 bytes as hex private key
     const bytes = crypto.getRandomValues(new Uint8Array(32))
     pk = '0x' + Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')
     localStorage.setItem('spread-trust-pk', pk)
@@ -42,6 +41,22 @@ const publicClient = createPublicClient({
   transport,
 })
 
+// --- History ---
+
+function getHistory() {
+  try {
+    return JSON.parse(localStorage.getItem('spread-trust-history') || '[]')
+  } catch {
+    return []
+  }
+}
+
+function addHistory(to, amount, txHash) {
+  const history = getHistory()
+  history.unshift({ to, amount, txHash, timestamp: Date.now() })
+  localStorage.setItem('spread-trust-history', JSON.stringify(history))
+}
+
 // --- UI ---
 
 const $address = document.getElementById('wallet-address')
@@ -55,12 +70,9 @@ const $sendTo = document.getElementById('send-to')
 const $sendAmount = document.getElementById('send-amount')
 const $sendBtn = document.getElementById('send-btn')
 const $status = document.getElementById('status')
-const $pageMain = document.getElementById('page-main')
-const $pageSettings = document.getElementById('page-settings')
-const $openSettings = document.getElementById('open-settings')
-const $backBtn = document.getElementById('back-btn')
 const $settingAmount = document.getElementById('setting-amount')
 const $settingAutosend = document.getElementById('setting-autosend')
+const $historyList = document.getElementById('history-list')
 
 $address.textContent = account.address
 $address.addEventListener('click', () => {
@@ -83,6 +95,23 @@ function setStatus(msg, type = 'info') {
   $status.textContent = msg
   $status.className = `status-${type}`
 }
+
+// --- Navigation ---
+
+const pages = document.querySelectorAll('.page')
+const navBtns = document.querySelectorAll('.nav-btn')
+
+function navigateTo(pageId) {
+  pages.forEach(p => p.classList.toggle('hidden', p.id !== pageId))
+  navBtns.forEach(b => b.classList.toggle('active', b.dataset.page === pageId))
+
+  if (pageId === 'page-history') renderHistory()
+  if (pageId === 'page-dashboard') renderDashboard()
+}
+
+navBtns.forEach(btn => {
+  btn.addEventListener('click', () => navigateTo(btn.dataset.page))
+})
 
 // --- QR Scanner ---
 
@@ -151,7 +180,6 @@ function stopScan() {
 function handleScannedValue(value) {
   stopScan()
 
-  // Extract ethereum address — support raw address or EIP-681 URIs
   let address = value.trim()
   if (address.startsWith('ethereum:')) {
     address = address.replace('ethereum:', '').split('@')[0].split('/')[0].split('?')[0]
@@ -203,6 +231,7 @@ async function sendTo(to, amountStr) {
   try {
     const value = parseEther(amountStr)
     const hash = await walletClient.sendTransaction({ to, value })
+    addHistory(to, amountStr, hash)
     setStatus('', 'info')
     $status.innerHTML = `Sent! <a class="tx-link" href="${intuitionChain.blockExplorers.default.url}/tx/${hash}" target="_blank" rel="noopener">${hash.slice(0, 10)}...${hash.slice(-8)}</a>`
     $status.className = 'status-success'
@@ -219,6 +248,44 @@ $sendBtn.addEventListener('click', () => {
   sendTo($sendTo.textContent, $sendAmount.value.trim())
 })
 
+// --- History rendering ---
+
+function renderHistory() {
+  const history = getHistory()
+  if (history.length === 0) {
+    $historyList.innerHTML = '<div class="empty-state">No transactions yet</div>'
+    return
+  }
+
+  $historyList.innerHTML = history.map(tx => {
+    const addr = `${tx.to.slice(0, 6)}...${tx.to.slice(-4)}`
+    const time = new Date(tx.timestamp).toLocaleString()
+    const explorerUrl = `${intuitionChain.blockExplorers.default.url}/tx/${tx.txHash}`
+    return `<div class="history-item">
+      <div>
+        <a class="history-addr" href="${explorerUrl}" target="_blank" rel="noopener">${addr}</a>
+        <div class="history-time">${time}</div>
+      </div>
+      <div class="history-amount">${tx.amount} TRUST</div>
+    </div>`
+  }).join('')
+}
+
+// --- Dashboard rendering ---
+
+function renderDashboard() {
+  const history = getHistory()
+  const totalTx = history.length
+  const totalSent = history.reduce((sum, tx) => sum + parseFloat(tx.amount || 0), 0)
+  const uniqueWallets = new Set(history.map(tx => tx.to.toLowerCase())).size
+  const avg = totalTx > 0 ? (totalSent / totalTx) : 0
+
+  document.getElementById('stat-total-tx').textContent = totalTx
+  document.getElementById('stat-total-sent').textContent = totalSent % 1 === 0 ? totalSent : totalSent.toFixed(2)
+  document.getElementById('stat-unique-wallets').textContent = uniqueWallets
+  document.getElementById('stat-avg-amount').textContent = avg % 1 === 0 ? avg : avg.toFixed(2)
+}
+
 // --- Settings ---
 
 function loadSettings() {
@@ -233,24 +300,12 @@ function saveSettings() {
   localStorage.setItem('spread-trust-autosend', $settingAutosend.checked)
 }
 
-// Init settings UI
 const savedSettings = loadSettings()
 $settingAmount.value = savedSettings.defaultAmount
 $settingAutosend.checked = savedSettings.autoSend
 
 $settingAmount.addEventListener('change', saveSettings)
 $settingAutosend.addEventListener('change', saveSettings)
-
-$openSettings.addEventListener('click', () => {
-  $pageMain.classList.add('hidden')
-  $pageSettings.classList.remove('hidden')
-})
-
-$backBtn.addEventListener('click', () => {
-  saveSettings()
-  $pageSettings.classList.add('hidden')
-  $pageMain.classList.remove('hidden')
-})
 
 // --- PWA service worker ---
 

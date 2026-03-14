@@ -16,6 +16,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
+      padding-bottom: 70px;
     }
     h1 { font-size: 1.4rem; margin: 1.5rem 0 0.5rem; color: #fff; }
     .subtitle { font-size: 0.85rem; color: #888; margin-bottom: 1.5rem; }
@@ -144,35 +145,9 @@
     .tx-link { color: #7dd3fc; text-decoration: none; font-size: 0.8rem; }
     .tx-link:hover { text-decoration: underline; }
 
-    /* Settings page */
+    /* Pages */
     .page { display: flex; flex-direction: column; align-items: center; width: 100%; }
     .page.hidden { display: none; }
-
-    .settings-btn {
-      background: none;
-      border: none;
-      color: #888;
-      font-size: 0.85rem;
-      cursor: pointer;
-      margin-top: 1.5rem;
-      margin-bottom: 1.5rem;
-      width: auto;
-      padding: 0.5rem;
-    }
-    .settings-btn:active { color: #fff; }
-
-    .back-btn {
-      background: none;
-      border: none;
-      color: #7dd3fc;
-      font-size: 0.9rem;
-      cursor: pointer;
-      width: auto;
-      padding: 0.5rem;
-      align-self: flex-start;
-      margin-left: 5%;
-      margin-top: 1rem;
-    }
 
     .setting-row {
       display: flex;
@@ -225,6 +200,101 @@
     .toggle input:checked + .slider::before { transform: translateX(20px); }
 
     .card + .card { margin-top: 0; }
+
+    /* Bottom navbar */
+    .navbar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: #111;
+      border-top: 1px solid #2a2a2a;
+      display: flex;
+      align-items: center;
+      justify-content: space-around;
+      z-index: 100;
+      padding-bottom: env(safe-area-inset-bottom, 0);
+    }
+    .nav-btn {
+      background: none;
+      border: none;
+      color: #666;
+      width: auto;
+      margin: 0;
+      padding: 0.4rem 1.2rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.2rem;
+      font-size: 0.65rem;
+      font-weight: 500;
+      border-radius: 0;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+    .nav-btn.active { color: #7dd3fc; }
+    .nav-btn svg { width: 22px; height: 22px; }
+
+    /* History page */
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.7rem 0;
+      border-bottom: 1px solid #222;
+    }
+    .history-item:last-child { border-bottom: none; }
+    .history-addr {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.75rem;
+      color: #7dd3fc;
+    }
+    .history-amount {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+    }
+    .history-time {
+      font-size: 0.65rem;
+      color: #555;
+      margin-top: 0.15rem;
+    }
+    .empty-state {
+      text-align: center;
+      color: #555;
+      font-size: 0.85rem;
+      padding: 2rem 0;
+    }
+
+    /* Dashboard */
+    .stat-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+      width: 90%;
+      max-width: 400px;
+    }
+    .stat-card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .stat-label {
+      font-size: 0.7rem;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-top: 0.3rem;
+    }
   </style>
 </head>
 <body>
@@ -268,16 +338,45 @@
     </div>
 
     <div id="status"></div>
+  </div>
 
-    <button class="settings-btn" id="open-settings" aria-label="Settings">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    </button>
+  <!-- History page -->
+  <div class="page hidden" id="page-history">
+    <h1>History</h1>
+    <p class="subtitle">Recent transactions</p>
+    <div class="card" id="history-list">
+      <div class="empty-state">No transactions yet</div>
+    </div>
+  </div>
+
+  <!-- Dashboard page -->
+  <div class="page hidden" id="page-dashboard">
+    <h1>Dashboard</h1>
+    <p class="subtitle">Usage metrics</p>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total-tx">0</div>
+        <div class="stat-label">Transactions</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-total-sent">0</div>
+        <div class="stat-label">TRUST Sent</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-unique-wallets">0</div>
+        <div class="stat-label">Wallets Reached</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="stat-avg-amount">0</div>
+        <div class="stat-label">Avg per Send</div>
+      </div>
+    </div>
   </div>
 
   <!-- Settings page -->
   <div class="page hidden" id="page-settings">
-    <button class="back-btn" id="back-btn">&larr; Back</button>
     <h1>Settings</h1>
+    <p class="subtitle">Configure your wallet</p>
 
     <div class="card">
       <div class="card-title">Default amount</div>
@@ -298,6 +397,26 @@
       </div>
     </div>
   </div>
+
+  <!-- Bottom navbar -->
+  <nav class="navbar">
+    <button class="nav-btn active" data-page="page-main" aria-label="Home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </button>
+    <button class="nav-btn" data-page="page-history" aria-label="History">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      History
+    </button>
+    <button class="nav-btn" data-page="page-dashboard" aria-label="Dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-btn" data-page="page-settings" aria-label="Settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      Settings
+    </button>
+  </nav>
 
   <script type="module" src="/src/main.js"></script>
 </body>
