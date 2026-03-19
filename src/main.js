@@ -178,7 +178,7 @@ function handleScannedValue(value) {
 
 document.querySelectorAll('.chip').forEach(chip => {
   chip.addEventListener('click', () => {
-    const current = parseFloat($sendAmount.value) || 0
+    const current = parseFloat($sendAmount.value.replace(/,/g, '.')) || 0
     $sendAmount.value = current + Number(chip.dataset.add)
   })
 })
@@ -192,6 +192,7 @@ $stopScanBtn.addEventListener('click', () => {
 // --- Send transaction ---
 
 async function sendTo(to, amountStr) {
+  amountStr = amountStr.replace(/,/g, '.')
   if (!amountStr || isNaN(Number(amountStr)) || Number(amountStr) <= 0) {
     setStatus('Enter a valid amount', 'error')
     return
