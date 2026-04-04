@@ -84,7 +84,7 @@ $address.addEventListener('click', () => {
 async function refreshBalance() {
   try {
     const bal = await publicClient.getBalance({ address: account.address })
-    $balance.textContent = formatEther(bal)
+    $balance.textContent = Math.floor(Number(formatEther(bal)))
   } catch {
     $balance.textContent = '—'
   }
@@ -283,9 +283,9 @@ function renderDashboard() {
   const avg = totalTx > 0 ? (totalSent / totalTx) : 0
 
   document.getElementById('stat-total-tx').textContent = totalTx
-  document.getElementById('stat-total-sent').textContent = totalSent % 1 === 0 ? totalSent : totalSent.toFixed(2)
+  document.getElementById('stat-total-sent').textContent = Math.floor(totalSent)
   document.getElementById('stat-unique-wallets').textContent = uniqueWallets
-  document.getElementById('stat-avg-amount').textContent = avg % 1 === 0 ? avg : avg.toFixed(2)
+  document.getElementById('stat-avg-amount').textContent = Math.floor(avg)
 }
 
 // --- Settings ---
