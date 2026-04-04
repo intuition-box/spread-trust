@@ -1,6 +1,7 @@
 import { createWalletClient, createPublicClient, http, formatEther, parseEther } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 import jsQR from 'jsqr'
+import QRCode from 'qrcode'
 
 const intuitionChain = {
   id: 1155,
@@ -307,6 +308,33 @@ $settingAutosend.checked = savedSettings.autoSend
 
 $settingAmount.addEventListener('change', saveSettings)
 $settingAutosend.addEventListener('change', saveSettings)
+
+// --- Wallet QR code ---
+
+const $showQrBtn = document.getElementById('show-qr-btn')
+const $qrModal = document.getElementById('qr-modal')
+const $qrCanvas = document.getElementById('qr-canvas')
+const $qrAddress = document.getElementById('qr-address')
+const $qrClose = document.getElementById('qr-close')
+
+$showQrBtn.addEventListener('click', async () => {
+  const uri = `ethereum:${account.address}@${intuitionChain.id}`
+  await QRCode.toCanvas($qrCanvas, uri, {
+    width: 256,
+    margin: 2,
+    color: { dark: '#000000', light: '#ffffff' },
+  })
+  $qrAddress.textContent = account.address
+  $qrModal.classList.add('visible')
+})
+
+$qrClose.addEventListener('click', () => {
+  $qrModal.classList.remove('visible')
+})
+
+$qrModal.addEventListener('click', (e) => {
+  if (e.target === $qrModal) $qrModal.classList.remove('visible')
+})
 
 // --- PWA service worker ---
 
